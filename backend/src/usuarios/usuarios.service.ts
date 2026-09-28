@@ -63,4 +63,14 @@ export class UsuariosService {
 
     return usuarioSinContrasena;
   }
+  async buscarPorCorreo(correoElectronico: string): Promise<Usuario | null> {
+    return this.usuarioRepository.findOne({
+      where: {
+        correoElectronico,
+      },
+      relations: {
+        rol: true,
+    },
+  });
+}
 }
