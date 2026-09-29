@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ClinicalHistoriesModule } from './modules/clinical-histories/clinical-histories.module';
+import { TherapeuticProcessesModule } from './modules/therapeutic-processes/therapeutic-processes.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { ClinicalHistoriesModule } from './modules/clinical-histories/clinical-h
     }),
 
     ClinicalHistoriesModule,
+    TherapeuticProcessesModule,
   ],
 })
 export class AppModule {}
