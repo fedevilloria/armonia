@@ -1,5 +1,5 @@
 import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
-import { PatientOrmEntity } from '../../../../patient/infrastructure/persistence/patient.orm-entity';
+import { PatientOrmEntity } from '../../../patients/infrastructure/persistence/patient.orm-entity';
 
 @Entity('procesos_terapeuticos')
 export class TherapeuticProcessOrmEntity {
@@ -9,9 +9,9 @@ export class TherapeuticProcessOrmEntity {
     @Column()
     idProfesional!: number;
 
-    @ManyToOne(() => PatientOrmEntity, (paciente) => paciente.procesosTerapeuticos)
+    @ManyToOne(() => PatientOrmEntity)
     @JoinColumn({ name: 'idPaciente' })
-    paciente: PatientOrmEntity;
+    paciente!: PatientOrmEntity;
 
     @Column()
     idEstadoProcesoTerapeutico!: number;
