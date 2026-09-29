@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { UsuariosModule } from './usuarios/usuarios.module';
+import { AuthModule } from './auth/auth.module';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -35,6 +37,8 @@ import { AvailabilityModule } from './modules/availabilities/availability.module
     }),
 
     AvailabilityModule,
+    UsuariosModule,
+    AuthModule,
   ],
 
   controllers: [AppController],
