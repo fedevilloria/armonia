@@ -3,6 +3,7 @@ import {
   ConflictException,
   Injectable,
 } from '@nestjs/common';
+
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
@@ -22,11 +23,13 @@ export class UsuariosService {
   ) {}
 
   async crear(createUsuarioDto: CreateUsuarioDto) {
-    const usuarioExistente = await this.usuarioRepository.findOne({
-      where: {
-        correoElectronico: createUsuarioDto.correoElectronico,
-      },
-    });
+    const usuarioExistente =
+      await this.usuarioRepository.findOne({
+        where: {
+          correoElectronico:
+            createUsuarioDto.correoElectronico,
+        },
+      });
 
     if (usuarioExistente) {
       throw new ConflictException(
@@ -41,7 +44,9 @@ export class UsuariosService {
     });
 
     if (!rol) {
-      throw new BadRequestException('El rol indicado no existe');
+      throw new BadRequestException(
+        'El rol indicado no existe',
+      );
     }
 
     const contrasenaHash = await bcrypt.hash(
@@ -52,25 +57,32 @@ export class UsuariosService {
     const usuario = this.usuarioRepository.create({
       nombre: createUsuarioDto.nombre,
       apellido: createUsuarioDto.apellido,
-      correoElectronico: createUsuarioDto.correoElectronico,
+      correoElectronico:
+        createUsuarioDto.correoElectronico,
       contrasena: contrasenaHash,
       rol,
     });
 
-    const usuarioGuardado = await this.usuarioRepository.save(usuario);
+    const usuarioGuardado =
+      await this.usuarioRepository.save(usuario);
 
-    const { contrasena, ...usuarioSinContrasena } = usuarioGuardado;
+    const { contrasena, ...usuarioSinContrasena } =
+      usuarioGuardado;
 
     return usuarioSinContrasena;
   }
-  async buscarPorCorreo(correoElectronico: string): Promise<Usuario | null> {
-    return this.usuarioRepository.findOne({
-      where: {
-        correoElectronico,
-      },
-      relations: {
-        rol: true,
-    },
-  });
-}
+
+  async buscarPorCorreo(
+    correoElectronico: string,
+  ): Promise<Usuario | null> {
+    return this.usuarioRepository
+      .createQueryBuilder('usuario')
+      .addSelect('usuario.contrasena')
+      .leftJoinAndSelect('usuario.rol', 'rol')
+      .where(
+        'usuario.correoElectronico = :correoElectronico',
+        { correoElectronico },
+      )
+      .getOne();
+  }
 }

@@ -22,7 +22,9 @@ export class Usuario {
   @Column({ unique: true })
   correoElectronico!: string;
 
-  @Column()
+  @Column({
+    select: false,
+  })
   contrasena!: string;
 
   @Column({

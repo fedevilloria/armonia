@@ -1,8 +1,12 @@
 import {
+  Body,
   Controller,
   Get,
+  Post,
 } from '@nestjs/common';
 
+import { Roles } from '../auth/decorators/roles.decorator';
+import { CreateProfesionalDto } from './dto/create-profesional.dto';
 import { ProfesionalesService } from './profesionales.service';
 import { UsuarioActual } from '../auth/decorators/usuario-actual.decorator';
 
@@ -20,6 +24,16 @@ export class ProfesionalesController {
   ) {
     return this.profesionalesService.buscarPorUsuario(
       usuario.sub,
+    );
+  }
+
+  @Post()
+  @Roles('ADMINISTRADOR')
+  crear(
+    @Body() createProfesionalDto: CreateProfesionalDto,
+  ) {
+    return this.profesionalesService.crear(
+      createProfesionalDto,
     );
   }
 }
