@@ -32,7 +32,7 @@ import { AvailabilityModule } from './modules/availabilities/availability.module
 
         autoLoadEntities: true,
 
-        synchronize: true,
+        synchronize: false,
       }),
     }),
 
