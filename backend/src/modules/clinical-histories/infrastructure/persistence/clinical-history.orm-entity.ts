@@ -12,7 +12,7 @@ export class ClinicalHistoryOrmEntity {
     //Relacion 1 a 1 con el proceso terapeutico
     @OneToOne(()=> TherapeuticProcessOrmEntity)
     @JoinColumn({name:'idProcesoTerapeutico'})
-    procesoTerapeutico: TherapeuticProcessOrmEntity;
+    procesoTerapeutico!: TherapeuticProcessOrmEntity;
 
     @Column({type:'text' })
     motivoconsulta!: string;
