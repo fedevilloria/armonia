@@ -23,16 +23,19 @@ const block = (changes: Partial<Availability> = {}): Availability =>
     ),
     changes,
   );
-const appointment = (changes: Partial<Appointment> = {}): Appointment => ({
-  id: 1,
-  professionalId: 42,
-  patientId: 9,
-  date: date(),
-  startTime: '09:30',
-  endTime: '10:00',
-  status: AppointmentStatus.RESERVED,
-  ...changes,
-});
+const appointment = (changes: Partial<Appointment> = {}): Appointment =>
+  Object.assign(
+    new Appointment(
+      1,
+      42,
+      9,
+      date(),
+      '09:30',
+      '10:00',
+      AppointmentStatus.RESERVED,
+    ),
+    changes,
+  );
 
 describe('GetFreeSlotsService', () => {
   const availabilityRepository = {

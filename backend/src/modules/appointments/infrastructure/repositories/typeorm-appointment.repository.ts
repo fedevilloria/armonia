@@ -83,6 +83,9 @@ export class TypeOrmAppointmentRepository implements AppointmentRepository {
       this.formatTime(entity.startTime),
       this.formatTime(entity.endTime),
       entity.status,
+      entity.createdAt ?? null,
+      entity.updatedAt ?? null,
+      entity.createdByUserId ?? null,
     );
   }
 
@@ -106,6 +109,7 @@ export class TypeOrmAppointmentRepository implements AppointmentRepository {
     entity.startTime = appointment.startTime;
     entity.endTime = appointment.endTime;
     entity.status = appointment.status;
+    entity.createdByUserId = appointment.createdByUserId;
 
     return entity;
   }

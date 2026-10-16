@@ -20,6 +20,25 @@ describe('Shared TypeORM entity registration', () => {
       source.entityMetadatas.map((entity) => entity.tableName).sort(),
     ).toEqual(['appointments', 'availabilities', 'roles', 'usuarios']);
     const appointment = source.getMetadata(AppointmentOrmEntity);
+    expect(appointment.checks.map((check) => check.name)).toContain(
+      'CK_appointments_time_order',
+    );
+    expect(appointment.exclusions.map((exclusion) => exclusion.name)).toContain(
+      'EX_appointments_professional_time',
+    );
+    expect(
+      appointment.columns.find((column) => column.propertyName === 'createdAt')
+        ?.isCreateDate,
+    ).toBe(true);
+    expect(
+      appointment.columns.find((column) => column.propertyName === 'updatedAt')
+        ?.isUpdateDate,
+    ).toBe(true);
+    expect(
+      appointment.foreignKeys.find(
+        (key) => key.name === 'FK_appointments_creator',
+      )?.referencedTablePath,
+    ).toBe('usuarios');
     expect(
       appointment.columns.find((column) => column.propertyName === 'status')
         ?.enum,
