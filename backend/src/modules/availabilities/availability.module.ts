@@ -1,3 +1,4 @@
+import { AuthModule } from '../../auth/auth.module';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
@@ -12,13 +13,10 @@ import { AvailabilityController } from './presentation/controllers/availability.
  * la gestion de disponibilidades horarias.
  */
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([AvailabilityOrmEntity]),
-  ],
+  imports: [AuthModule, TypeOrmModule.forFeature([AvailabilityOrmEntity])],
 
-  controllers: [
-    AvailabilityController,
-  ],
+  exports: [AVAILABILITY_REPOSITORY],
+  controllers: [AvailabilityController],
 
   providers: [
     CreateAvailabilityService,

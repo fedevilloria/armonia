@@ -4,12 +4,17 @@ import {
   HttpCode,
   HttpStatus,
   Post,
+  Req,
+  UseGuards,
   UseFilters,
 } from '@nestjs/common';
 
 import { CreateAvailabilityDto } from '../../application/dto/create-availability.dto';
 import { CreateAvailabilityService } from '../../application/services/create-availability.service';
 import { Availability } from '../../domain/entities/availability.entity';
+import { Roles } from '../../../../auth/decorators/roles.decorator';
+import { ProfessionalIdentityGuard } from '../../../../auth/guards/professional-identity.guard';
+import type { AuthenticatedRequest } from '../../../../auth/authenticated-request';
 import { DomainExceptionFilter } from '../filters/domain-exception.filter';
 
 /**
@@ -30,16 +35,13 @@ export class AvailabilityController {
    * @returns Disponibilidad horaria registrada.
    */
   @Post()
+  @Roles('PROFESIONAL')
+  @UseGuards(ProfessionalIdentityGuard)
   @HttpCode(HttpStatus.CREATED)
   async create(
     @Body() dto: CreateAvailabilityDto,
+    @Req() request: AuthenticatedRequest,
   ): Promise<Availability> {
-    //TODO: REEMPLAZAR POR EL IDENTIFICADOR DEL PROFESIONAL AUTENTICADO.
-    const professionalId = 1; // Temporalmente se utiliza un identificador fijo hasta integrar la autenticacion de usuarios.
-
-    return this.createAvailabilityService.execute(
-      professionalId,
-      dto,
-    );
+    return this.createAvailabilityService.execute(request.professionalId!, dto);
   }
 }

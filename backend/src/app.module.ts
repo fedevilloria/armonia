@@ -6,6 +6,8 @@ import { AuthModule } from './auth/auth.module';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { databaseEntities } from './database/entities';
+import { AppointmentsModule } from './modules/appointments/appointments.module';
 import { AvailabilityModule } from './modules/availabilities/availability.module';
 
 /**
@@ -30,13 +32,14 @@ import { AvailabilityModule } from './modules/availabilities/availability.module
         password: configService.get<string>('DB_PASSWORD'),
         database: configService.get<string>('DB_DATABASE'),
 
-        autoLoadEntities: true,
+        entities: databaseEntities,
 
         synchronize: false,
       }),
     }),
 
     AvailabilityModule,
+    AppointmentsModule,
     UsuariosModule,
     AuthModule,
   ],

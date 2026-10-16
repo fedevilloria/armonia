@@ -8,6 +8,11 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { UsuariosModule } from '../usuarios/usuarios.module';
 import { RolesGuard } from './guards/roles.guard';
 import { APP_GUARD } from '@nestjs/core';
+import { ProfessionalIdentityGuard } from './guards/professional-identity.guard';
+import {
+  ProfessionalIdentityResolver,
+  UnconfiguredProfessionalIdentityResolver,
+} from './professional-identity.resolver';
 
 @Module({
   imports: [
@@ -25,8 +30,14 @@ import { APP_GUARD } from '@nestjs/core';
     }),
   ],
   controllers: [AuthController],
+  exports: [ProfessionalIdentityGuard, ProfessionalIdentityResolver],
   providers: [
     AuthService,
+    ProfessionalIdentityGuard,
+    {
+      provide: ProfessionalIdentityResolver,
+      useClass: UnconfiguredProfessionalIdentityResolver,
+    },
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,

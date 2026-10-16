@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { DataSource } from 'typeorm';
-import { AvailabilityOrmEntity } from './modules/availabilities/infrastructure/persistence/availability.orm-entity';
+import { databaseEntities } from './database/entities';
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
@@ -12,10 +12,7 @@ export const AppDataSource = new DataSource({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_DATABASE,
 
-  entities: [
-    __dirname + '/**/*.entity{.ts,.js}',
-    AvailabilityOrmEntity,
-  ],
+  entities: databaseEntities,
 
   migrations: [__dirname + '/migrations/*{.ts,.js}'],
 

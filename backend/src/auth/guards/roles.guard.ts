@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 
+import type { AuthenticatedRequest } from '../authenticated-request';
 import { ROLES_KEY } from '../decorators/roles.decorator';
 
 @Injectable()
@@ -13,23 +14,20 @@ export class RolesGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const rolesPermitidos = this.reflector.getAllAndOverride<string[]>(
-      ROLES_KEY,
-      [
-        context.getHandler(),
-        context.getClass(),
-      ],
-    );
+    const allowedRoles = this.reflector.getAllAndOverride<string[]>(ROLES_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
 
-    if (!rolesPermitidos) {
+    if (!allowedRoles) {
       return true;
     }
 
-    const request = context.switchToHttp().getRequest();
+    const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
 
-    const usuario = request.user;
+    const user = request.user;
 
-    if (!usuario || !rolesPermitidos.includes(usuario.rol)) {
+    if (!user || !allowedRoles.includes(user.rol)) {
       throw new ForbiddenException(
         'No tiene permisos para acceder a este recurso',
       );
