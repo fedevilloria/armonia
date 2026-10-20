@@ -1,10 +1,9 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
-import { ClinicalHistoryOrmEntity } from "../../infrastructure/persistence/clinical-history.orm-entity";
 import { TherapeuticProcessOrmEntity } from "../../../therapeutic-processes/infrastructure/persistence/therapeutic-process.orm-entity";
+import { ClinicalHistoryOrmEntity } from "../../infrastructure/persistence/clinical-history.orm-entity";
 import { CreateClinicalHistoryDto } from "../dto/create-clinical-history.dto";
-import { NotFoundError } from "rxjs";
 
 @Injectable()
 export class ClinicalHistoryService {
@@ -36,10 +35,7 @@ export class ClinicalHistoryService {
         }
         
         // 4. Crear y guardar la historia clinica
-
-
-
-        
+        const clinicalHistory = this.clinicalHistoryRepository.create(dto);
         return await this.clinicalHistoryRepository.save(clinicalHistory);
     }
 }
