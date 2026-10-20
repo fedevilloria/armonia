@@ -12,6 +12,11 @@ import { CreateAvailabilityService } from '../../application/services/create-ava
 import { Availability } from '../../domain/entities/availability.entity';
 import { DomainExceptionFilter } from '../filters/domain-exception.filter';
 
+import { UsuarioActual } from '../../../../auth/decorators/usuario-actual.decorator';
+import type { UsuarioAutenticado } from '../../../../auth/interfaces/usuario-autenticado.interface';
+import { Roles } from '../../../../auth/decorators/roles.decorator';
+import { ProfesionalesService } from '../../../../profesionales/profesionales.service';
+
 /**
  * Expone los endpoints HTTP relacionados con la gestion
  * de disponibilidades horarias.
@@ -21,6 +26,7 @@ import { DomainExceptionFilter } from '../filters/domain-exception.filter';
 export class AvailabilityController {
   constructor(
     private readonly createAvailabilityService: CreateAvailabilityService,
+    private readonly profesionalesService: ProfesionalesService,
   ) {}
 
   /**
@@ -30,15 +36,20 @@ export class AvailabilityController {
    * @returns Disponibilidad horaria registrada.
    */
   @Post()
+  @Roles('PROFESIONAL')
   @HttpCode(HttpStatus.CREATED)
   async create(
     @Body() dto: CreateAvailabilityDto,
+    @UsuarioActual() usuario: UsuarioAutenticado,
   ): Promise<Availability> {
-    //TODO: REEMPLAZAR POR EL IDENTIFICADOR DEL PROFESIONAL AUTENTICADO.
-    const professionalId = 1; // Temporalmente se utiliza un identificador fijo hasta integrar la autenticacion de usuarios.
+    // Se obtiene el profesional autenticado a partir del usuario identificado mediante JWT.
+    const profesional =
+      await this.profesionalesService.buscarPorUsuario(
+        usuario.sub,
+      );
 
     return this.createAvailabilityService.execute(
-      professionalId,
+      profesional.idProfesional,
       dto,
     );
   }
