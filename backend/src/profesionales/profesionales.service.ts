@@ -1,3 +1,4 @@
+
 import {
   ConflictException,
   Injectable,
@@ -192,10 +193,17 @@ export class ProfesionalesService {
           especialidad,
         });
 
-        return manager.save(
+        // 9. Guardar profesional sin exponer la contraseña del usuario
+
+        const profesionalGuardado = await manager.save(
           Profesional,
           profesional,
         );
+
+        delete (profesionalGuardado.usuario as Partial<Usuario>)
+          .contrasena;
+
+        return profesionalGuardado;
       },
     );
   }

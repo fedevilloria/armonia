@@ -7,6 +7,8 @@ import { AvailabilityOrmEntity } from './infrastructure/persistence/availability
 import { TypeOrmAvailabilityRepository } from './infrastructure/repositories/typeorm-availability.repository';
 import { AvailabilityController } from './presentation/controllers/availability.controller';
 
+import { ProfesionalesModule } from '../../profesionales/profesionales.module';
+
 /**
  * Agrupa y configura los componentes relacionados con
  * la gestion de disponibilidades horarias.
@@ -14,6 +16,7 @@ import { AvailabilityController } from './presentation/controllers/availability.
 @Module({
   imports: [
     TypeOrmModule.forFeature([AvailabilityOrmEntity]),
+    ProfesionalesModule,
   ],
 
   controllers: [
