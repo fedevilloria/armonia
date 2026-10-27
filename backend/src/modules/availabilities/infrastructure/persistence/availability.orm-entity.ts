@@ -1,9 +1,13 @@
 import {
   Column,
   Entity,
+  JoinColumn,
+  ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
+
 import { DayOfWeek } from '../../domain/enums/day-of-week.enum';
+import { Profesional } from '../../../../profesionales/entities/profesional.entity';
 
 /**
  * Representa la estructura de persistencia de una disponibilidad
@@ -25,6 +29,21 @@ export class AvailabilityOrmEntity {
    */
   @Column({ name: 'professional_id', type: 'int' })
   professionalId!: number;
+
+  /**
+   * Relacion con el profesional propietario de la disponibilidad.
+   * Permite garantizar la integridad referencial entre ambas entidades.
+   */
+  @ManyToOne(() => Profesional, {
+    nullable: false,
+    onDelete: 'RESTRICT',
+  })
+  @JoinColumn({
+    name: 'professional_id',
+    foreignKeyConstraintName: 'FK_availabilities_profesional',
+    referencedColumnName: 'idProfesional',
+  })
+  professional!: Profesional;
 
   /**
    * Dia de la semana correspondiente al bloque de disponibilidad.

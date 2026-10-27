@@ -1,3 +1,5 @@
+import { ProfesionalesModule } from '../profesionales/profesionales.module';
+import { PersistedProfessionalIdentityResolver } from './infrastructure/professional-identity.resolver';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
@@ -9,14 +11,12 @@ import { UsuariosModule } from '../usuarios/usuarios.module';
 import { RolesGuard } from './guards/roles.guard';
 import { APP_GUARD } from '@nestjs/core';
 import { ProfessionalIdentityGuard } from './guards/professional-identity.guard';
-import {
-  ProfessionalIdentityResolver,
-  UnconfiguredProfessionalIdentityResolver,
-} from './professional-identity.resolver';
+import { ProfessionalIdentityResolver } from './professional-identity.resolver';
 
 @Module({
   imports: [
     UsuariosModule,
+    ProfesionalesModule,
 
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -36,7 +36,7 @@ import {
     ProfessionalIdentityGuard,
     {
       provide: ProfessionalIdentityResolver,
-      useClass: UnconfiguredProfessionalIdentityResolver,
+      useClass: PersistedProfessionalIdentityResolver,
     },
     {
       provide: APP_GUARD,

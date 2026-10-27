@@ -1,18 +1,23 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { UsuariosController } from './usuarios.controller';
-
+import { UsuariosService } from './usuarios.service';
 describe('UsuariosController', () => {
-  let controller: UsuariosController;
-
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+  it('delegates creation to the existing user service', async () => {
+    const service = { crear: jest.fn().mockResolvedValue({ idUsuario: 7 }) };
+    const module = await Test.createTestingModule({
       controllers: [UsuariosController],
+      providers: [{ provide: UsuariosService, useValue: service }],
     }).compile();
-
-    controller = module.get<UsuariosController>(UsuariosController);
-  });
-
-  it('should be defined', () => {
-    expect(controller).toBeDefined();
+    const input = {
+      nombre: 'Unit',
+      apellido: 'Test',
+      correoElectronico: 'unit@example.com',
+      contrasena: 'unit-test-password',
+      idRol: 1,
+    };
+    expect(await module.get(UsuariosController).crear(input)).toEqual({
+      idUsuario: 7,
+    });
+    expect(service.crear).toHaveBeenCalledWith(input);
   });
 });

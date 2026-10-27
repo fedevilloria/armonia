@@ -3,6 +3,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsuariosModule } from './usuarios/usuarios.module';
 import { AuthModule } from './auth/auth.module';
+import { ProfesionalesModule } from './profesionales/profesionales.module';
+import { EspecialidadesModule } from './especialidades/especialidades.module';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -27,7 +29,7 @@ import { AvailabilityModule } from './modules/availabilities/availability.module
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
         host: configService.get<string>('DB_HOST'),
-        port: configService.get<number>('DB_PORT'),
+        port: Number(configService.get<string>('DB_PORT')),
         username: configService.get<string>('DB_USERNAME'),
         password: configService.get<string>('DB_PASSWORD'),
         database: configService.get<string>('DB_DATABASE'),
@@ -42,6 +44,8 @@ import { AvailabilityModule } from './modules/availabilities/availability.module
     AppointmentsModule,
     UsuariosModule,
     AuthModule,
+    ProfesionalesModule,
+    EspecialidadesModule,
   ],
 
   controllers: [AppController],

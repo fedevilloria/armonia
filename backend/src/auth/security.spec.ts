@@ -1,3 +1,4 @@
+import type { Server } from 'node:http';
 import { CreateAppointmentService } from '../modules/appointments/application/services/create-appointment.service';
 import {
   AppointmentTransaction,
@@ -17,10 +18,7 @@ import request from 'supertest';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { ProfessionalIdentityGuard } from './guards/professional-identity.guard';
-import {
-  ProfessionalIdentityResolver,
-  UnconfiguredProfessionalIdentityResolver,
-} from './professional-identity.resolver';
+import { ProfessionalIdentityResolver } from './professional-identity.resolver';
 import { AvailabilityController } from '../modules/availabilities/presentation/controllers/availability.controller';
 import { CreateAvailabilityService } from '../modules/availabilities/application/services/create-availability.service';
 import { AVAILABILITY_REPOSITORY } from '../modules/availabilities/domain/repositories/availability.repository';
@@ -28,7 +26,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 
 describe('HTTP authentication and professional ownership', () => {
-  let app: INestApplication;
+  let app: INestApplication<Server>;
   let jwt: JwtService;
   const resolver = { resolve: jest.fn() };
   const repository = { findByProfessionalAndDay: jest.fn(), save: jest.fn() };
@@ -123,7 +121,9 @@ describe('HTTP authentication and professional ownership', () => {
     );
     resolver.resolve.mockResolvedValue(null);
     repository.findByProfessionalAndDay.mockResolvedValue([]);
-    repository.save.mockImplementation(async (value) => value);
+    repository.save.mockImplementation((value: unknown) =>
+      Promise.resolve(value),
+    );
   });
   afterAll(async () => {
     await app?.close();
@@ -153,7 +153,7 @@ describe('HTTP authentication and professional ownership', () => {
       expect(resolver.resolve).not.toHaveBeenCalled();
     },
   );
-  it('keeps free slots closed with the provisional resolver', async () => {
+  it('keeps free slots closed when no professional is resolved', async () => {
     await getSlots()
       .auth(token(), { type: 'bearer' })
       .query({ date: '2026-10-19' })
@@ -266,7 +266,7 @@ describe('HTTP authentication and professional ownership', () => {
       .auth(token(), { type: 'bearer' })
       .send(bookingInput)
       .expect(404);
-    expect(response.body.message).toBe(
+    expect((response.body as { message: string }).message).toBe(
       'Paciente no encontrado o no disponible',
     );
     expect(bookingAppointments.save).not.toHaveBeenCalled();
@@ -359,18 +359,15 @@ describe('HTTP authentication and professional ownership', () => {
     expect(resolver.resolve).toHaveBeenCalledWith(7);
     expect(repository.save).not.toHaveBeenCalled();
   });
-  it('keeps the default resolver closed', async () => {
-    expect(
-      await new UnconfiguredProfessionalIdentityResolver().resolve(7),
-    ).toBeNull();
-  });
   it('uses the server professional identity instead of the user id', async () => {
     resolver.resolve.mockResolvedValue(42);
     const response = await post()
       .auth(token(), { type: 'bearer' })
       .send(body)
       .expect(201);
-    expect(response.body.professionalId).toBe(42);
+    expect((response.body as { professionalId: number }).professionalId).toBe(
+      42,
+    );
     expect(repository.findByProfessionalAndDay).toHaveBeenCalledWith(
       42,
       'MONDAY',
