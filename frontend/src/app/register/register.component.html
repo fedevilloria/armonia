@@ -1,0 +1,138 @@
+<div class="register-container">
+
+  <div class="register-card" *ngIf="!registroExitoso">
+
+    <h1>Crear cuenta</h1>
+
+    <form (ngSubmit)="registrarUsuario()">
+
+      <div class="form-group">
+        <label for="nombre">Nombre</label>
+
+        <input
+          type="text"
+          id="nombre"
+          name="nombre"
+          [(ngModel)]="nombre"
+          required
+          placeholder="Ingresá tu nombre"
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="apellido">Apellido</label>
+
+        <input
+          type="text"
+          id="apellido"
+          name="apellido"
+          [(ngModel)]="apellido"
+          required
+          placeholder="Ingresá tu apellido"
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email</label>
+
+        <input
+          type="email"
+          id="email"
+          name="email"
+          [(ngModel)]="email"
+          required
+          placeholder="Ingresá tu email"
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="password">Contraseña</label>
+
+        <div class="password-container">
+
+          <input
+            [type]="mostrarPassword ? 'text' : 'password'"
+            id="password"
+            name="password"
+            [(ngModel)]="password"
+            required
+            placeholder="Ingresá tu contraseña"
+          >
+
+          <button
+            type="button"
+            class="toggle-password"
+            (click)="alternarPassword()"
+          >
+            {{ mostrarPassword ? 'Ocultar' : 'Mostrar' }}
+          </button>
+
+        </div>
+
+        <p class="password-help">
+          (Mín. 6 caracteres y al menos una mayúscula,una minúscula, un número y un caracter especial)
+        </p>
+      </div>
+
+      <div class="form-group">
+        <label for="confirmPassword">Confirmar contraseña</label>
+
+        <div class="password-container">
+
+          <input
+            [type]="mostrarConfirmPassword ? 'text' : 'password'"
+            id="confirmPassword"
+            name="confirmPassword"
+            [(ngModel)]="confirmPassword"
+            required
+            placeholder="Repetí tu contraseña"
+          >
+
+          <button
+            type="button"
+            class="toggle-password"
+            (click)="alternarConfirmPassword()"
+          >
+            {{ mostrarConfirmPassword ? 'Ocultar' : 'Mostrar' }}
+          </button>
+
+        </div>
+      </div>
+
+      <button type="submit">
+        Registrarme
+      </button>
+
+      <p *ngIf="mensaje" class="mensaje">
+        {{ mensaje }}
+      </p>
+
+    </form>
+
+  </div>
+
+
+  <!-- Pantalla de registro exitoso -->
+
+  <div class="success-card" *ngIf="registroExitoso">
+
+    <div class="success-icon">
+      ✓
+    </div>
+
+    <h1>¡Usuario registrado con éxito!</h1>
+
+    <p>
+      Tu cuenta fue creada correctamente.
+    </p>
+
+    <button
+      type="button"
+      (click)="volverAlLogin()"
+    >
+      Ir al inicio de sesión
+    </button>
+
+  </div>
+
+</div>
