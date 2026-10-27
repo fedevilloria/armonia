@@ -1,5 +1,7 @@
 import { Entity, Column, PrimaryGeneratedColumn, OneToOne, JoinColumn } from 'typeorm';
 import { TherapeuticProcessOrmEntity } from '../../../therapeutic-processes/infrastructure/persistence/therapeutic-process.orm-entity';
+import { OneToMany } from 'typeorm';
+import { ClinicalEvolutionOrmEntity } from '../../../clinical-evolutions/infrastructure/persistence/clinical-evolution.orm-entity';
 
 @Entity('historias_clinicas')
 export class ClinicalHistoryOrmEntity {
@@ -19,4 +21,7 @@ export class ClinicalHistoryOrmEntity {
 
     @Column({type:'text' })
     diagnostico!: string;
+
+    @OneToMany(() => ClinicalEvolutionOrmEntity, (evolucion: ClinicalEvolutionOrmEntity) => evolucion.historiaClinica)
+    evoluciones!: ClinicalEvolutionOrmEntity[];
 }
