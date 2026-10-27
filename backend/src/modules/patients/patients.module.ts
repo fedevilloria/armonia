@@ -27,9 +27,9 @@ import {PatientOrmEntity} from './infrastructure/persistence/patient.orm-entity'
 
     // se le dice a nestJS: "cuando alguien pida la interfaz "IPatientRepository"", se entrega la clase real "PatientRepository" que se conecta a PostgreSQL
     { 
-        provide: 'PatientRepository', 
-        useClass: PatientRepository 
-    }
+        provide: 'IPatientRepository', 
+        useClass: PatientRepository,
+    },
 ],
 exports: [
     // se exporta el servicio por si el modulo de tunos o procesos terapeuticos se necesita más adelante  

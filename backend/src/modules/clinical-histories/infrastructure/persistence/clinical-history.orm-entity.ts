@@ -17,10 +17,14 @@ export class ClinicalHistoryOrmEntity {
     procesoTerapeutico!: TherapeuticProcessOrmEntity;
 
     @Column({type:'text' })
-    motivoconsulta!: string;
+    motivoConsulta!: string;
 
     @Column({type:'text' })
+    antecedentes!: string;
+    
+    @Column({type:'text' })
     diagnostico!: string;
+
 
     @OneToMany(() => ClinicalEvolutionOrmEntity, (evolucion: ClinicalEvolutionOrmEntity) => evolucion.historiaClinica)
     evoluciones!: ClinicalEvolutionOrmEntity[];
