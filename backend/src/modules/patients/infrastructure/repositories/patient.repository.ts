@@ -32,7 +32,7 @@ export class PatientRepository implements IPatientRepository {
         return pacientesOrm.map(this.toDomain);   
     }
 
-    async findByIdAndProfessional(idPaciente: number, idProfesional: number): Promise<Patiente | null> {
+    async findByIdAndProfessional(idPaciente: number, idProfesional: number): Promise<Patient | null> {
          const pacienteOrm = await this.ormRepository.findOne({
             where: { idPaciente: idPaciente}
         });
