@@ -8,11 +8,13 @@ export class ClinicalEvolutionController {
 
     @Post()
     async create(@Body() createDto: CreateClinicalEvolutionDto){
-        return await this.evolutionService.create(createDto);
+        const profesionalID = 1; // ID Simulado
+        return await this.evolutionService.create(createDto, profesionalID);
     }
 
     @Get('historia-clinica/:idHistoriaClinica')
     async findAllByHistoriaClinica(@Param('idHistoriaClinica', ParseIntPipe) idHistoriaClinica: number){
-        return await this.evolutionService.findAllByHistoriaClinica(idHistoriaClinica);
+        const profesionalID = 1; // ID Simulado
+        return await this.evolutionService.findAllByHistoriaClinica(idHistoriaClinica, profesionalID);
     }
 }

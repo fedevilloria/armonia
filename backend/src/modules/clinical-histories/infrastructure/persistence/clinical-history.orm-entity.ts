@@ -6,7 +6,7 @@ import { ClinicalEvolutionOrmEntity } from '../../../clinical-evolutions/infrast
 @Entity('historias_clinicas')
 export class ClinicalHistoryOrmEntity {
     @PrimaryGeneratedColumn()
-    idHistorialClinica!: number;
+    idHistoriaClinica!: number;
 
     @Column()
     idProcesoTerapeutico!: number;
