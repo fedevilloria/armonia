@@ -1,6 +1,8 @@
+
 import 'dotenv/config';
 import { DataSource } from 'typeorm';
 import { AvailabilityOrmEntity } from './modules/availabilities/infrastructure/persistence/availability.orm-entity';
+import { PatientOrmEntity } from './modules/patients/infrastructure/persistence/patient.orm-entity';
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
@@ -15,6 +17,7 @@ export const AppDataSource = new DataSource({
   entities: [
     __dirname + '/**/*.entity{.ts,.js}',
     AvailabilityOrmEntity,
+    PatientOrmEntity,
   ],
 
   migrations: [__dirname + '/migrations/*{.ts,.js}'],
