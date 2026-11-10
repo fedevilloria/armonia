@@ -1,17 +1,12 @@
-import {IsInt, IsNotEmpty, IsOptional, IsString} from 'class-validator';
+import { IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
 
 export class CreateTherapeuticProcessDto {
-    @IsInt()
-    @IsNotEmpty()
-    idPaciente!: number;
+  @IsInt()
+  @Min(1)
+  @IsNotEmpty()
+  idPaciente!: number;
 
-    @IsInt()
-    @IsNotEmpty()
-    idProfesional!: number;
-
-    @IsString()
-    @IsOptional()
-    observaciones?: string;
+  @IsString()
+  @IsOptional()
+  observaciones?: string;
 }
-
-  

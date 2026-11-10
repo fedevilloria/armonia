@@ -11,11 +11,12 @@ export class TherapeuticProcessService {
         private readonly processRepository: Repository<TherapeuticProcessOrmEntity>,
     ) {}
 
-    async create(dto: CreateTherapeuticProcessDto): Promise<TherapeuticProcessOrmEntity> {
+    async create(dto: CreateTherapeuticProcessDto, idProfesional: number,): Promise<TherapeuticProcessOrmEntity> {
         // Aplicamos la regla: validar que el paciente no tenga ya un proceso asociado
         const procesoExistente = await this.processRepository.findOne({
             where: {
-                paciente: { idPaciente: dto.idPaciente }
+                paciente: { idPaciente: dto.idPaciente },
+                
             },
         });
 
@@ -25,7 +26,7 @@ export class TherapeuticProcessService {
 
         // El estado 1 representa "Activo" segun el diagrama de estados
         const nuevoProceso = this.processRepository.create({
-            idProfesional: dto.idProfesional,
+            idProfesional: idProfesional,
             paciente: { idPaciente: dto.idPaciente},
             idEstadoProcesoTerapeutico: 1,
             fechaInicio: new Date(),
