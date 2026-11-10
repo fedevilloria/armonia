@@ -1,14 +1,15 @@
+
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { TherapeuticProcessesModule } from './modules/therapeutic-processes/therapeutic-processes.module';
+
 import { UsuariosModule } from './usuarios/usuarios.module';
 import { AuthModule } from './auth/auth.module';
 import { ProfesionalesModule } from './profesionales/profesionales.module';
 import { EspecialidadesModule } from './especialidades/especialidades.module';
-
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { AvailabilityModule } from './modules/availabilities/availability.module';
+import { PatientsModule } from './modules/patients/patients.module';
 
 /**
  * Modulo raiz de la aplicacion.
@@ -38,15 +39,15 @@ import { AvailabilityModule } from './modules/availabilities/availability.module
       }),
     }),
 
+    
     AvailabilityModule,
     UsuariosModule,
     AuthModule,
     ProfesionalesModule,
     EspecialidadesModule,
+    PatientsModule,
+    TherapeuticProcessesModule,
   ],
-
-  controllers: [AppController],
-
-  providers: [AppService],
 })
+
 export class AppModule {}
