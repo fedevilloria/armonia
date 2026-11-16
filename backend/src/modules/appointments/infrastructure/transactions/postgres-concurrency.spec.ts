@@ -1,24 +1,22 @@
 import { DataSource, type QueryRunner } from 'typeorm';
 import { randomBytes } from 'node:crypto';
+import {
+  cleanupTestDatabase,
+  PostgresTestSafetyError,
+  validateTestDatabaseUrl,
+  verifyTestDatabaseIdentity,
+} from './postgres-test-support';
 
 // Optativo: solo una base dedicada cuyo nombre empiece por armonia_appointments_test.
 // No lee .env, no ejecuta migraciones y nunca usa la configuracion de desarrollo.
 const connectionString = process.env.ARMONIA_BOOKING_TEST_URL;
 const suite = connectionString ? describe : describe.skip;
 suite('PostgreSQL concurrent appointment exclusion', () => {
+  jest.setTimeout(15000);
   const schema = 'booking_test_' + randomBytes(6).toString('hex');
-  const source = new DataSource({
-    type: 'postgres',
-    url: connectionString,
-    entities: [],
-    synchronize: false,
-    logging: false,
-    extra: { max: 4 },
-  });
-  const observer = source.createQueryRunner(),
-    first = source.createQueryRunner(),
-    second = source.createQueryRunner();
-  const connected: QueryRunner[] = [];
+  let source: DataSource | undefined;
+  let observer: QueryRunner, first: QueryRunner, second: QueryRunner;
+  const runners: QueryRunner[] = [];
   let initialized = false;
   async function query<T>(
     runner: QueryRunner,
@@ -28,39 +26,54 @@ suite('PostgreSQL concurrent appointment exclusion', () => {
     return (await runner.query(sql, parameters)) as T[];
   }
   beforeAll(async () => {
-    let database: string;
     try {
-      database = new URL(connectionString!).pathname.slice(1);
-    } catch {
-      throw new Error('URL de base de pruebas invalida');
-    }
-    if (!/^armonia_appointments_test[a-z0-9_]*$/.test(database))
-      throw new Error(
-        'Se requiere una base dedicada armonia_appointments_test',
+      const target = validateTestDatabaseUrl(connectionString!);
+      source = new DataSource({
+        type: 'postgres',
+        ...target,
+        entities: [],
+        synchronize: false,
+        migrationsRun: false,
+        installExtensions: false,
+        logging: false,
+        extra: {
+          max: 4,
+          connectionTimeoutMillis: 5000,
+          query_timeout: 10000,
+          options:
+            '-c statement_timeout=8000 -c lock_timeout=5000 -c idle_in_transaction_session_timeout=12000',
+        },
+      });
+      await source.initialize();
+      observer = source.createQueryRunner();
+      first = source.createQueryRunner();
+      second = source.createQueryRunner();
+      runners.push(observer, first, second);
+      for (const runner of runners) {
+        await runner.connect();
+        await verifyTestDatabaseIdentity(runner, target);
+      }
+      await observer.query('CREATE EXTENSION IF NOT EXISTS btree_gist');
+      await observer.query('CREATE SCHEMA "' + schema + '"');
+      initialized = true;
+      await observer.query(
+        `CREATE TABLE "${schema}".appointments (id serial PRIMARY KEY, professional_id integer NOT NULL, date date NOT NULL, start_time time NOT NULL, end_time time NOT NULL, status text NOT NULL, CHECK(start_time < end_time), CONSTRAINT "EX_appointments_professional_time" EXCLUDE USING gist (professional_id WITH =, tsrange(date + start_time,date + end_time,'[)') WITH &&) WHERE(status IN ('RESERVED','CONFIRMED','ATTENDED','NOT_ATTENDED')))`,
       );
-    await source.initialize();
-    for (const runner of [observer, first, second]) {
-      await runner.connect();
-      connected.push(runner);
+    } catch (error) {
+      if (error instanceof PostgresTestSafetyError) throw error;
+      throw new PostgresTestSafetyError(
+        'No se pudo preparar PostgreSQL de pruebas. Verifique destino, conexión, permisos y timeouts.',
+      );
     }
-    await observer.query('CREATE EXTENSION IF NOT EXISTS btree_gist');
-    await observer.query('CREATE SCHEMA "' + schema + '"');
-    initialized = true;
-    await observer.query(
-      `CREATE TABLE "${schema}".appointments (id serial PRIMARY KEY, professional_id integer NOT NULL, date date NOT NULL, start_time time NOT NULL, end_time time NOT NULL, status text NOT NULL, CHECK(start_time < end_time), CONSTRAINT "EX_appointments_professional_time" EXCLUDE USING gist (professional_id WITH =, tsrange(date + start_time,date + end_time,'[)') WITH &&) WHERE(status IN ('RESERVED','CONFIRMED','ATTENDED','NOT_ATTENDED')))`,
-    );
-  });
+  }, 90000);
   afterAll(async () => {
-    await Promise.allSettled(
-      connected
-        .filter((runner) => runner.isTransactionActive)
-        .map((runner) => runner.rollbackTransaction()),
+    await cleanupTestDatabase(
+      source,
+      runners,
+      observer,
+      initialized ? schema : undefined,
     );
-    if (initialized)
-      await observer.query('DROP SCHEMA "' + schema + '" CASCADE');
-    await Promise.allSettled(connected.map((runner) => runner.release()));
-    if (source.isInitialized) await source.destroy();
-  });
+  }, 45000);
   const insert = (
     runner: QueryRunner,
     owner: number,
