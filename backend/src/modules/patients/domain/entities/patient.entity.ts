@@ -10,6 +10,7 @@ export class Patient {
     direccion!: string;
     nombreContactoEmergencia?: string;
     telefonoContactoEmergencia?: string;
+    pareja!: boolean;
 
     constructor(partial: Partial<Patient>) {
         Object.assign(this, partial);

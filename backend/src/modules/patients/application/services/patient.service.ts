@@ -12,7 +12,11 @@ export class PatientService {
 
     //1. registra paciente 
     async createPatient(patientData: Partial<Patient>, profesionalId: number): Promise<Patient> {
-        const newPatient = new Patient(patientData);
+        const newPatient = new Patient({
+             ...patientData,
+        pareja: patientData.pareja ?? false, // se agrego esta linea para darle valor por defecto
+        });
+            
         // el repositoria se encarga de guardar el paciente y vincularlo al profesional
         return this.patientRepository.create(newPatient, profesionalId);
               

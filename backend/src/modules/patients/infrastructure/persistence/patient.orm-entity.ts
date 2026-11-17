@@ -1,4 +1,5 @@
-import {Entity, Column, PrimaryGeneratedColumn} from 'typeorm';
+import {Entity, Column, PrimaryGeneratedColumn, ManyToMany} from 'typeorm';
+import { TherapeuticProcessOrmEntity } from '../../../therapeutic-processes/infrastructure/persistence/therapeutic-process.orm-entity';
 
 @Entity('patients') // Nombre de la tabla en PostgreSQL
 export class PatientOrmEntity {
@@ -34,6 +35,12 @@ export class PatientOrmEntity {
 
     @Column({ nullable: true })
     telefonoContactoEmergencia?: string;
+
+    @Column({type: 'boolean', default: false})
+    pareja!: boolean;
+
+    @ManyToMany(() => TherapeuticProcessOrmEntity, (proceso) => proceso.paciente)
+    procesosTerapeuticos!: TherapeuticProcessOrmEntity[];
 
     // Más adelante, se agrega la relacion @OneToMany con ProcesoTerapeutico
     
