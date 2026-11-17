@@ -10,6 +10,8 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { databaseEntities } from './database/entities';
 import { AppointmentsModule } from './modules/appointments/appointments.module';
+import { PatientsModule } from './modules/patients/patients.module';
+import { TherapeuticProcessesModule } from './modules/therapeutic-processes/therapeutic-processes.module';
 import { AvailabilityModule } from './modules/availabilities/availability.module';
 
 /**
@@ -46,6 +48,8 @@ import { AvailabilityModule } from './modules/availabilities/availability.module
     AuthModule,
     ProfesionalesModule,
     EspecialidadesModule,
+    PatientsModule,
+    TherapeuticProcessesModule,
   ],
 
   controllers: [AppController],

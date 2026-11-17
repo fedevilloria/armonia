@@ -22,6 +22,9 @@ describe('Shared TypeORM entity registration', () => {
       'appointments',
       'availabilities',
       'especialidades',
+      'estados_proceso_terapeutico',
+      'patients',
+      'procesos_terapeuticos',
       'profesionales',
       'roles',
       'tipos_documento',
@@ -64,6 +67,13 @@ describe('Shared TypeORM entity registration', () => {
     expect(
       userRelation.joinColumns.map((column) => column.databaseName),
     ).toEqual(['idUsuario']);
+    const process = source.entityMetadatas.find(
+      (entity) => entity.tableName === 'procesos_terapeuticos',
+    )!;
+    expect(
+      process.relations.find((relation) => relation.propertyName === 'paciente')
+        ?.inverseEntityMetadata.tableName,
+    ).toBe('patients');
     const appointment = source.getMetadata(AppointmentOrmEntity);
     expect(appointment.checks.map((check) => check.name)).toContain(
       'CK_appointments_time_order',

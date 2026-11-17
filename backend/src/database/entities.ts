@@ -1,3 +1,6 @@
+import { TherapeuticProcessStateOrmEntity } from '../modules/therapeutic-processes/infrastructure/persistence/therapeutic-process-state.orm-entity';
+import { PatientOrmEntity } from '../modules/patients/infrastructure/persistence/patient.orm-entity';
+import { TherapeuticProcessOrmEntity } from '../modules/therapeutic-processes/infrastructure/persistence/therapeutic-process.orm-entity';
 import { Profesional } from '../profesionales/entities/profesional.entity';
 import { TipoDocumento } from '../profesionales/entities/tipo-documento.entity';
 import { Especialidad } from '../especialidades/entities/especialidad.entity';
@@ -15,4 +18,7 @@ export const databaseEntities = [
   Rol,
   AvailabilityOrmEntity,
   AppointmentOrmEntity,
+  PatientOrmEntity,
+  TherapeuticProcessOrmEntity,
+  TherapeuticProcessStateOrmEntity,
 ];
