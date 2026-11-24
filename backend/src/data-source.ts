@@ -1,18 +1,26 @@
-import * as dotenv from "dotenv";
-import { DataSource } from "typeorm";
 
-dotenv.config();
+import 'dotenv/config';
+import { DataSource } from 'typeorm';
+import { AvailabilityOrmEntity } from './modules/availabilities/infrastructure/persistence/availability.orm-entity';
+import { PatientOrmEntity } from './modules/patients/infrastructure/persistence/patient.orm-entity';
 
 export const AppDataSource = new DataSource({
-    type: "postgres",
-    host: process.env.DB_HOST || "localhost",
-    port: parseInt(process.env.DB_PORT || "5432"),
-    username: process.env.DB_USERNAME || "postgres",
-    password: process.env.DB_PASSWORD || "postgres",
-    database: process.env.DB_NAME || "armonia",
-    synchronize: false, // debe estar en false para que las migraciones funcionen
-    logging: true, 
-    // ruta adaptada a la arquitectura modular (DDD) que armamos:
-    entities: ["src/**/*.orm-entity.ts"],
-    migrations: ["src/migrations/*.ts"],
+  type: 'postgres',
+
+  host: process.env.DB_HOST,
+  port: Number(process.env.DB_PORT),
+
+  username: process.env.DB_USERNAME,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_DATABASE,
+
+  entities: [
+    __dirname + '/**/*.entity{.ts,.js}',
+    AvailabilityOrmEntity,
+    PatientOrmEntity,
+  ],
+
+  migrations: [__dirname + '/migrations/*{.ts,.js}'],
+
+  synchronize: false,
 });

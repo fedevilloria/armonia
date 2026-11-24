@@ -25,7 +25,7 @@ export class PatientOrmEntity {
     numeroDocumento!: string;
 
     @Column({ type: 'date' })
-    fechaNacimiento!: Date;
+    fechaNacimiento!: string;
 
     @Column()
     direccion!: string;
