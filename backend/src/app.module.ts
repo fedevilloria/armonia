@@ -13,6 +13,8 @@ import { AppointmentsModule } from './modules/appointments/appointments.module';
 import { PatientsModule } from './modules/patients/patients.module';
 import { TherapeuticProcessesModule } from './modules/therapeutic-processes/therapeutic-processes.module';
 import { AvailabilityModule } from './modules/availabilities/availability.module';
+import { ClinicalHistoriesModule } from './modules/clinical-histories/clinical-histories.module';
+import { ClinicalEvolutionsModule } from './modules/clinical-evolutions/clinical-evolutions.module';
 
 /**
  * Modulo raiz de la aplicacion.
@@ -50,6 +52,8 @@ import { AvailabilityModule } from './modules/availabilities/availability.module
     EspecialidadesModule,
     PatientsModule,
     TherapeuticProcessesModule,
+    ClinicalHistoriesModule,
+    ClinicalEvolutionsModule,
   ],
 
   controllers: [AppController],

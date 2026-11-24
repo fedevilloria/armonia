@@ -59,5 +59,8 @@ export class PatientOrmEntity {
   @Column({ nullable: true })
   telefonoContactoEmergencia?: string;
 
+  @Column({ type: 'boolean', default: false })
+  pareja!: boolean;
+
   // Más adelante, se agrega la relacion @OneToMany con ProcesoTerapeutico
 }

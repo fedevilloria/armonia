@@ -1,0 +1,20 @@
+import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { ClinicalEvolutionOrmEntity } from './infrastructure/persistence/clinical-evolution.orm-entity';
+import { ClinicalHistoryOrmEntity } from '../clinical-histories/infrastructure/persistence/clinical-history.orm-entity';
+import { ClinicalEvolutionController } from './presentation/controllers/clinical-evolution.controller';
+import { ClinicalEvolutionService } from './application/services/clinical-evolutions.service';
+import { AuthModule } from '../../auth/auth.module';
+
+@Module({
+  imports: [
+    TypeOrmModule.forFeature([
+      ClinicalEvolutionOrmEntity,
+      ClinicalHistoryOrmEntity,
+    ]),
+    AuthModule,
+  ],
+  controllers: [ClinicalEvolutionController],
+  providers: [ClinicalEvolutionService],
+})
+export class ClinicalEvolutionsModule {}

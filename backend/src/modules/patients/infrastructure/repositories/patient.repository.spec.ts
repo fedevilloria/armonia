@@ -100,6 +100,27 @@ describe('Patient repository access rules', () => {
     expect(orm.update).toHaveBeenCalledWith(1, update);
     expect(orm.manager.existsBy).not.toHaveBeenCalled();
   });
+  it.each([true, false])(
+    'persists and recovers pareja %s on update',
+    async (pareja) => {
+      orm.findOne.mockResolvedValue({ idPaciente: 1, pareja });
+      await expect(repository.update(1, { pareja }, 42)).resolves.toMatchObject(
+        { pareja },
+      );
+      expect(orm.update).toHaveBeenCalledWith(1, { pareja });
+    },
+  );
+  it('does not reset pareja when it is omitted in an update', async () => {
+    orm.findOne.mockResolvedValue({
+      idPaciente: 1,
+      telefono: 'new',
+      pareja: true,
+    });
+    await expect(
+      repository.update(1, { telefono: 'new' }, 42),
+    ).resolves.toMatchObject({ pareja: true });
+    expect(orm.update).toHaveBeenCalledWith(1, { telefono: 'new' });
+  });
   it.each([
     ['23505', 'UQ_patients_tipo_numero_documento', 409],
     ['23503', 'FK_patients_tipo_documento', 400],
@@ -165,7 +186,27 @@ describe('Patient initial transaction', () => {
         idEstadoProcesoTerapeutico: 1,
       }),
     );
+    expect(manager.save).toHaveBeenCalledTimes(2);
   });
+  it.each([true, false])(
+    'preserves pareja %s through initial persistence mapping',
+    async (pareja) => {
+      const patient = new Patient({
+        idTipoDocumento: 1,
+        nombre: 'Ficticio',
+        pareja,
+      });
+      await expect(repository.create(patient, 42)).resolves.toMatchObject({
+        pareja,
+      });
+      expect(manager.save).toHaveBeenNthCalledWith(
+        1,
+        PatientOrmEntity,
+        patient,
+      );
+      expect(manager.save).toHaveBeenCalledTimes(2);
+    },
+  );
   it('rejects an unknown catalog entry before either save', async () => {
     manager.existsBy.mockResolvedValue(false);
     await expect(repository.create(initial, 42)).rejects.toMatchObject({

@@ -3,6 +3,8 @@ import { databaseEntities } from './entities';
 import { PatientOrmEntity } from '../modules/patients/infrastructure/persistence/patient.orm-entity';
 import { TherapeuticProcessOrmEntity } from '../modules/therapeutic-processes/infrastructure/persistence/therapeutic-process.orm-entity';
 import { TherapeuticProcessStateOrmEntity } from '../modules/therapeutic-processes/infrastructure/persistence/therapeutic-process-state.orm-entity';
+import { ClinicalHistoryOrmEntity } from '../modules/clinical-histories/infrastructure/persistence/clinical-history.orm-entity';
+import { ClinicalEvolutionOrmEntity } from '../modules/clinical-evolutions/infrastructure/persistence/clinical-evolution.orm-entity';
 
 class ClinicalMetadataDataSource extends DataSource {
   async inspect() {
@@ -28,8 +30,8 @@ describe('Clinical ORM metadata matches existing SQL migrations', () => {
     expect(source.getMetadata(TherapeuticProcessStateOrmEntity).tableName).toBe(
       'estados_proceso_terapeutico',
     );
-    expect(source.entityMetadatas).toHaveLength(10);
-    expect(new Set(databaseEntities).size).toBe(10);
+    expect(source.entityMetadatas).toHaveLength(12);
+    expect(new Set(databaseEntities).size).toBe(12);
     expect(source.isInitialized).toBe(false);
     expect(source.options.synchronize).toBe(false);
   });
@@ -160,6 +162,65 @@ describe('Clinical ORM metadata matches existing SQL migrations', () => {
         .foreignKeys.some(
           (k) => k.referencedTablePath === 'procesos_terapeuticos',
         ),
+    ).toBe(false);
+  });
+
+  it('maps coherent history-process and history-evolution inverses without connecting', () => {
+    const process = source.getMetadata(TherapeuticProcessOrmEntity);
+    const history = source.getMetadata(ClinicalHistoryOrmEntity);
+    const evolution = source.getMetadata(ClinicalEvolutionOrmEntity);
+    const processHistory = process.relations.find(
+      (r) => r.propertyName === 'historiaClinica',
+    )!;
+    const historyProcess = history.relations.find(
+      (r) => r.propertyName === 'procesoTerapeutico',
+    )!;
+    expect(processHistory.inverseRelation).toBe(historyProcess);
+    expect(historyProcess.inverseRelation).toBe(processHistory);
+    expect(historyProcess.isNullable).toBe(false);
+    expect(
+      history.uniques.some((unique) =>
+        unique.columns.some(
+          (column) => column.databaseName === 'idProcesoTerapeutico',
+        ),
+      ),
+    ).toBe(true);
+    expect(historyProcess.joinColumns.map((c) => c.databaseName)).toEqual([
+      'idProcesoTerapeutico',
+    ]);
+    expect(
+      history.foreignKeys.find(
+        (k) => k.name === 'FK_99bea3b5f1d3273a49c933e9956',
+      )?.referencedTablePath,
+    ).toBe('procesos_terapeuticos');
+    const evolutionHistory = evolution.relations.find(
+      (r) => r.propertyName === 'historiaClinica',
+    )!;
+    expect(evolutionHistory.inverseRelation?.propertyName).toBe('evoluciones');
+    expect(evolutionHistory.isNullable).toBe(false);
+    expect(
+      evolution.foreignKeys.find(
+        (k) => k.name === 'FK_3255ca44b9a70bb0896f47d28e8',
+      )?.referencedTablePath,
+    ).toBe('historias_clinicas');
+    expect(
+      evolution.foreignKeys.some(
+        (k) => k.referencedTablePath === 'appointments',
+      ),
+    ).toBe(false);
+    expect(source.isInitialized).toBe(false);
+  });
+  it('maps pareja as a nonnullable boolean with default false', () => {
+    const column = source
+      .getMetadata(PatientOrmEntity)
+      .columns.find((c) => c.propertyName === 'pareja')!;
+    expect(column.type).toBe('boolean');
+    expect(column.isNullable).toBe(false);
+    expect(column.default).toBe(false);
+    expect(
+      source
+        .getMetadata(PatientOrmEntity)
+        .relations.some((r) => r.isManyToMany),
     ).toBe(false);
   });
 });

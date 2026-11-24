@@ -15,7 +15,10 @@ export class PatientService {
     patientData: Partial<Patient>,
     profesionalId: number,
   ): Promise<Patient> {
-    const newPatient = new Patient(patientData);
+    const newPatient = new Patient({
+      ...patientData,
+      pareja: patientData.pareja ?? false,
+    });
     // el repositoria se encarga de guardar el paciente y vincularlo al profesional
     return this.patientRepository.create(newPatient, profesionalId);
   }

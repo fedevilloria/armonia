@@ -12,6 +12,7 @@ const editableFields: readonly (keyof UpdatePatientDto)[] = [
   'direccion',
   'nombreContactoEmergencia',
   'telefonoContactoEmergencia',
+  'pareja',
 ];
 
 @Injectable()

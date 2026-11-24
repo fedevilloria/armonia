@@ -6,6 +6,8 @@ import {
   Min,
   IsDateString,
   IsOptional,
+  IsBoolean,
+  ValidateIf,
 } from 'class-validator';
 
 export class CreatePatientDto {
@@ -46,4 +48,8 @@ export class CreatePatientDto {
   @IsOptional()
   @IsString()
   telefonoContactoEmergencia?: string;
+
+  @ValidateIf((_object: unknown, value: unknown) => value !== undefined)
+  @IsBoolean()
+  pareja?: boolean;
 }

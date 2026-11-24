@@ -3,9 +3,11 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToOne,
   PrimaryGeneratedColumn,
   Index,
 } from 'typeorm';
+import { ClinicalHistoryOrmEntity } from '../../../clinical-histories/infrastructure/persistence/clinical-history.orm-entity';
 import { PatientOrmEntity } from '../../../patients/infrastructure/persistence/patient.orm-entity';
 
 import { Profesional } from '../../../../profesionales/entities/profesional.entity';
@@ -73,4 +75,10 @@ export class TherapeuticProcessOrmEntity {
 
   @Column({ type: 'text', nullable: true })
   motivoFinalizacion!: string;
+
+  @OneToOne(
+    () => ClinicalHistoryOrmEntity,
+    (history) => history.procesoTerapeutico,
+  )
+  historiaClinica!: ClinicalHistoryOrmEntity;
 }

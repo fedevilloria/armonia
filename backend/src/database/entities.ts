@@ -8,6 +8,8 @@ import { Usuario } from '../usuarios/entities/usuario.entity';
 import { Rol } from '../usuarios/entities/rol.entity';
 import { AvailabilityOrmEntity } from '../modules/availabilities/infrastructure/persistence/availability.orm-entity';
 import { AppointmentOrmEntity } from '../modules/appointments/infrastructure/persistence/appointment.orm-entity';
+import { ClinicalHistoryOrmEntity } from '../modules/clinical-histories/infrastructure/persistence/clinical-history.orm-entity';
+import { ClinicalEvolutionOrmEntity } from '../modules/clinical-evolutions/infrastructure/persistence/clinical-evolution.orm-entity';
 
 // Registro compartido por la aplicacion y el CLI de migraciones.
 export const databaseEntities = [
@@ -21,4 +23,6 @@ export const databaseEntities = [
   PatientOrmEntity,
   TherapeuticProcessOrmEntity,
   TherapeuticProcessStateOrmEntity,
+  ClinicalHistoryOrmEntity,
+  ClinicalEvolutionOrmEntity,
 ];

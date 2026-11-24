@@ -16,6 +16,10 @@ import { TherapeuticProcessesModule } from '../modules/therapeutic-processes/the
 import { Profesional } from '../profesionales/entities/profesional.entity';
 import { PatientOrmEntity } from '../modules/patients/infrastructure/persistence/patient.orm-entity';
 import { TherapeuticProcessOrmEntity } from '../modules/therapeutic-processes/infrastructure/persistence/therapeutic-process.orm-entity';
+import { ClinicalHistoriesModule } from '../modules/clinical-histories/clinical-histories.module';
+import { ClinicalEvolutionsModule } from '../modules/clinical-evolutions/clinical-evolutions.module';
+import { ClinicalHistoryOrmEntity } from '../modules/clinical-histories/infrastructure/persistence/clinical-history.orm-entity';
+import { ClinicalEvolutionOrmEntity } from '../modules/clinical-evolutions/infrastructure/persistence/clinical-evolution.orm-entity';
 
 const professionalRepository = { findOne: jest.fn() };
 const patients = {
@@ -39,6 +43,8 @@ const processes = {
   save: jest.fn(),
 };
 const manager = { findOne: jest.fn() };
+const histories = { findOne: jest.fn(), create: jest.fn(), save: jest.fn() };
+const evolutions = { find: jest.fn(), create: jest.fn(), save: jest.fn() };
 const persistence = {
   options: { type: 'postgres' },
   entityMetadatas: [],
@@ -46,6 +52,8 @@ const persistence = {
   getRepository: (entity: unknown) => {
     if (entity === Profesional) return professionalRepository;
     if (entity === TherapeuticProcessOrmEntity) return processes;
+    if (entity === ClinicalHistoryOrmEntity) return histories;
+    if (entity === ClinicalEvolutionOrmEntity) return evolutions;
     return {};
   },
 };
@@ -83,8 +91,25 @@ describe('Clinical HTTP security', () => {
       '/procesos-terapeuticos/1/estado',
       { idEstadoProcesoTerapeutico: 3 },
     ],
+    [
+      'post',
+      '/historias-clinicas',
+      {
+        idProcesoTerapeutico: 1,
+        motivoConsulta: 'Ensayo ficticio',
+        antecedentes: 'Sin datos reales',
+        diagnostico: 'Ficticio',
+      },
+    ],
+    ['get', '/evoluciones-clinicas/historia-clinica/1', {}],
+    [
+      'post',
+      '/evoluciones-clinicas',
+      { idHistoriaClinica: 1, idTurno: 11, descripcion: 'Ensayo ficticio' },
+    ],
   ] as const;
-  const token = (role = 'PROFESIONAL') => jwt.sign({ sub: 7, rol: role });
+  const token = (role = 'PROFESIONAL', userId = 7) =>
+    jwt.sign({ sub: userId, rol: role });
   const send = (method: string, path: string, body: object, auth?: string) => {
     const client = request(app.getHttpServer());
     const call =
@@ -110,6 +135,8 @@ describe('Clinical HTTP security', () => {
         }),
         PatientsModule,
         TherapeuticProcessesModule,
+        ClinicalHistoriesModule,
+        ClinicalEvolutionsModule,
       ],
     })
       .overrideProvider('IPatientRepository')
@@ -132,7 +159,9 @@ describe('Clinical HTTP security', () => {
       idProfesional: 42,
       fechaBaja: null,
     });
-    patients.create.mockResolvedValue({ ...patient, idPaciente: 1 });
+    patients.create.mockImplementation((value: object) =>
+      Promise.resolve({ ...value, idPaciente: 1 }),
+    );
     patients.findAllByProfessional.mockResolvedValue([{ idPaciente: 1 }]);
     patients.findByIdAndProfessional.mockResolvedValue({ idPaciente: 1 });
     patients.update.mockResolvedValue({
@@ -161,6 +190,32 @@ describe('Clinical HTTP security', () => {
     processes.save.mockImplementation((value: object) =>
       Promise.resolve({ ...value, idProcesoTerapeutico: 2 }),
     );
+    histories.findOne.mockImplementation(
+      (options: {
+        where: {
+          idHistoriaClinica: number;
+          procesoTerapeutico: { idProfesional: number };
+        };
+      }) =>
+        Promise.resolve(
+          options.where.idHistoriaClinica === 1 &&
+            options.where.procesoTerapeutico.idProfesional === 42
+            ? { idHistoriaClinica: 1 }
+            : null,
+        ),
+    );
+    histories.create.mockImplementation((value: object) => value);
+    histories.save.mockImplementation((value: object) =>
+      Promise.resolve({ ...value, idHistoriaClinica: 1 }),
+    );
+    evolutions.find.mockResolvedValue([
+      {
+        idEvolucionClinica: 1,
+        idHistoriaClinica: 1,
+        idTurno: 11,
+        descripcion: 'Evolucion ficticia',
+      },
+    ]);
   });
   afterAll(async () => {
     await app?.close();
@@ -170,7 +225,7 @@ describe('Clinical HTTP security', () => {
     'allows an active professional: %s %s',
     async (method, path, body) => {
       await send(method, path, body, token()).expect(
-        method === 'post' ? 201 : 200,
+        path === '/evoluciones-clinicas' ? 503 : method === 'post' ? 201 : 200,
       );
       expect(professionalRepository.findOne).toHaveBeenCalledTimes(1);
       expect(professionalRepository.findOne).toHaveBeenCalledWith(
@@ -210,6 +265,8 @@ describe('Clinical HTTP security', () => {
         expect(processes.findOne).not.toHaveBeenCalled();
         expect(processes.save).not.toHaveBeenCalled();
         expect(processBuilder.execute).not.toHaveBeenCalled();
+        expect(histories.save).not.toHaveBeenCalled();
+        expect(evolutions.save).not.toHaveBeenCalled();
       },
     );
   });
@@ -441,6 +498,10 @@ describe('Clinical HTTP security', () => {
     'process-patient-read',
     'process-read',
     'process-update',
+    'history-process-read',
+    'history-save',
+    'evolution-history-read',
+    'evolution-list',
   ])(
     'sanitizes unexpected %s errors without forwarding them to logs',
     async (step) => {
@@ -491,6 +552,27 @@ describe('Clinical HTTP security', () => {
             processes.findOne.mockRejectedValueOnce(failure);
           else processBuilder.execute.mockRejectedValueOnce(failure);
         }
+        if (step === 'history-process-read' || step === 'history-save') {
+          method = 'post';
+          path = '/historias-clinicas';
+          body = {
+            idProcesoTerapeutico: 1,
+            motivoConsulta: 'Ficticio',
+            antecedentes: 'Ficticios',
+            diagnostico: 'Ficticio',
+          };
+          if (step === 'history-process-read')
+            processes.findOne.mockRejectedValueOnce(failure);
+          else histories.save.mockRejectedValueOnce(failure);
+        }
+        if (step === 'evolution-history-read' || step === 'evolution-list') {
+          method = 'get';
+          path = '/evoluciones-clinicas/historia-clinica/1';
+          body = {};
+          if (step === 'evolution-history-read')
+            histories.findOne.mockRejectedValueOnce(failure);
+          else evolutions.find.mockRejectedValueOnce(failure);
+        }
         const response = await send(method, path, body, token()).expect(500);
         expect(response.body).toEqual({
           statusCode: 500,
@@ -513,6 +595,207 @@ describe('Clinical HTTP security', () => {
         consoleError.mockRestore();
         consoleWarn.mockRestore();
       }
+    },
+  );
+
+  it('creates a history only for the process scoped to the JWT professional', async () => {
+    const body = {
+      idProcesoTerapeutico: 1,
+      motivoConsulta: 'Ficticio',
+      antecedentes: 'Ficticios',
+      diagnostico: 'Ficticio',
+    };
+    const response = await send(
+      'post',
+      '/historias-clinicas',
+      body,
+      token(),
+    ).expect(201);
+    expect(response.body).toMatchObject(body);
+    expect(processes.findOne).toHaveBeenCalledWith({
+      where: { idProcesoTerapeutico: 1, idProfesional: 42 },
+    });
+  });
+  it('keeps history creation restricted to active processes', async () => {
+    processes.findOne.mockResolvedValue({
+      idProcesoTerapeutico: 1,
+      idProfesional: 42,
+      idEstadoProcesoTerapeutico: 3,
+    });
+    await send(
+      'post',
+      '/historias-clinicas',
+      {
+        idProcesoTerapeutico: 1,
+        motivoConsulta: 'Ficticio',
+        antecedentes: 'Ficticios',
+        diagnostico: 'Ficticio',
+      },
+      token(),
+    ).expect(400);
+    expect(histories.save).not.toHaveBeenCalled();
+  });
+  it('hides foreign and absent histories or processes without writes', async () => {
+    const results: unknown[] = [];
+    for (const id of [4, 999]) {
+      const history = await send(
+        'post',
+        '/historias-clinicas',
+        {
+          idProcesoTerapeutico: id,
+          motivoConsulta: 'Ficticio',
+          antecedentes: 'Ficticios',
+          diagnostico: 'Ficticio',
+        },
+        token(),
+      ).expect(404);
+      const list = await send(
+        'get',
+        `/evoluciones-clinicas/historia-clinica/${id}`,
+        {},
+        token(),
+      ).expect(404);
+      const create = await send(
+        'post',
+        '/evoluciones-clinicas',
+        { idHistoriaClinica: id, idTurno: 11, descripcion: 'Ficticio' },
+        token(),
+      ).expect(404);
+      results.push(history.body, list.body, create.body);
+    }
+    for (const result of results)
+      expect(result).toEqual({
+        statusCode: 404,
+        message: 'Recurso no encontrado',
+        error: 'Not Found',
+      });
+    expect(histories.save).not.toHaveBeenCalled();
+    expect(evolutions.save).not.toHaveBeenCalled();
+    expect(evolutions.find).not.toHaveBeenCalled();
+  });
+  it('does not grant the second professional access to the first professional history', async () => {
+    professionalRepository.findOne.mockResolvedValue({
+      idProfesional: 99,
+      fechaBaja: null,
+    });
+    await send(
+      'get',
+      '/evoluciones-clinicas/historia-clinica/1',
+      {},
+      token('PROFESIONAL', 8),
+    ).expect(404);
+    expect(histories.findOne).toHaveBeenCalledWith({
+      where: {
+        idHistoriaClinica: 1,
+        procesoTerapeutico: { idProfesional: 99 },
+      },
+    });
+    expect(evolutions.find).not.toHaveBeenCalled();
+  });
+  it('lists evolutions only within an accessible history and professional', async () => {
+    const response = await send(
+      'get',
+      '/evoluciones-clinicas/historia-clinica/1',
+      {},
+      token(),
+    ).expect(200);
+    expect(response.body).toEqual([
+      {
+        idEvolucionClinica: 1,
+        idHistoriaClinica: 1,
+        idTurno: 11,
+        descripcion: 'Evolucion ficticia',
+      },
+    ]);
+    expect(evolutions.find).toHaveBeenCalledWith({
+      where: {
+        idHistoriaClinica: 1,
+        historiaClinica: { procesoTerapeutico: { idProfesional: 42 } },
+      },
+    });
+  });
+  it.each([11, 99999])(
+    'keeps evolution creation closed even for an accessible history and turn %s',
+    async (idTurno) => {
+      await send(
+        'post',
+        '/evoluciones-clinicas',
+        { idHistoriaClinica: 1, idTurno, descripcion: 'Ficticio' },
+        token(),
+      ).expect(503);
+      expect(evolutions.create).not.toHaveBeenCalled();
+      expect(evolutions.save).not.toHaveBeenCalled();
+    },
+  );
+  it.each([
+    [
+      'post',
+      '/historias-clinicas',
+      {
+        idProcesoTerapeutico: 1,
+        motivoConsulta: 'Ficticio',
+        antecedentes: 'Ficticios',
+        diagnostico: 'Ficticio',
+        idProfesional: 99,
+      },
+    ],
+    [
+      'post',
+      '/evoluciones-clinicas',
+      {
+        idHistoriaClinica: 1,
+        idTurno: 11,
+        descripcion: 'Ficticio',
+        professionalId: 99,
+      },
+    ],
+    ['get', '/evoluciones-clinicas/historia-clinica/abc', {}],
+  ])(
+    'preserves validation on new clinical routes %s %s',
+    async (method, path, body) => {
+      await send(method, path, body, token()).expect(400);
+      expect(histories.save).not.toHaveBeenCalled();
+      expect(evolutions.save).not.toHaveBeenCalled();
+    },
+  );
+  it.each([undefined, true, false])(
+    'creates a single patient with pareja %s',
+    async (pareja) => {
+      const response = await send(
+        'post',
+        '/patients',
+        { ...patient, ...(pareja === undefined ? {} : { pareja }) },
+        token(),
+      ).expect(201);
+      expect(response.body).toMatchObject({ pareja: pareja ?? false });
+      expect(patients.create).toHaveBeenCalledTimes(1);
+      expect(patients.create).toHaveBeenCalledWith(
+        expect.objectContaining({ pareja: pareja ?? false }),
+        42,
+      );
+    },
+  );
+  it.each([true, false])(
+    'permits a pareja-only update to %s',
+    async (pareja) => {
+      patients.update.mockResolvedValue({ idPaciente: 1, pareja });
+      await send('put', '/patients/1', { pareja }, token()).expect(200);
+      expect(patients.update).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({ pareja }),
+        42,
+      );
+    },
+  );
+  it.each([null, 'true', 1])(
+    'rejects nonboolean pareja %s in POST and PUT',
+    async (pareja) => {
+      await send('post', '/patients', { ...patient, pareja }, token()).expect(
+        400,
+      );
+      await send('put', '/patients/1', { pareja }, token()).expect(400);
+      expect(patients.create).not.toHaveBeenCalled();
+      expect(patients.update).not.toHaveBeenCalled();
     },
   );
 });

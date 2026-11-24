@@ -23,6 +23,8 @@ describe('Shared TypeORM entity registration', () => {
       'availabilities',
       'especialidades',
       'estados_proceso_terapeutico',
+      'evoluciones_clinicas',
+      'historias_clinicas',
       'patients',
       'procesos_terapeuticos',
       'profesionales',
