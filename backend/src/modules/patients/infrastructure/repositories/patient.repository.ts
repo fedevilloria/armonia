@@ -19,22 +19,25 @@ export class PatientRepository implements IPatientRepository {
 
     async findAllByProfessional(idProfessional: number): Promise<Patient[]> {
         const pacientesOrm = await this.ormRepository.find({
-            //Logica para filatrar solo los pacientes que tengan un proceso terapeutico con este profesional
-            /* sacar cuando la relacion este armada:
-            where: {
+         where: {
               procesosTerapeuticos: {
-                idProfesional: idProfesional
+                idProfesional: idProfessional
                 }
             }
-            */
+           
 
         });
-        return pacientesOrm.map(this.toDomain);   
+        return pacientesOrm.map((paciente)=> this.toDomain(paciente));   
     }
 
     async findByIdAndProfessional(idPaciente: number, idProfesional: number): Promise<Patient | null> {
          const pacienteOrm = await this.ormRepository.findOne({
-            where: { idPaciente: idPaciente}
+            where: { 
+                idPaciente: idPaciente,
+                procesosTerapeuticos: {
+                    idProfesional: idProfesional,
+                },
+            },
         });
         return pacienteOrm ? this.toDomain(pacienteOrm) : null;
     }
