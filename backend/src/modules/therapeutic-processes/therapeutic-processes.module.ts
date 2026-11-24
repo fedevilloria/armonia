@@ -1,15 +1,14 @@
-
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TherapeuticProcessOrmEntity } from './infrastructure/persistence/therapeutic-process.orm-entity';
 import { TherapeuticProcessController } from './presentation/controllers/therapeutic-process.controller';
 import { TherapeuticProcessService } from './application/services/therapeutic-process.service';
-import { ProfesionalesModule } from '../../profesionales/profesionales.module';
+import { AuthModule } from '../../auth/auth.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([TherapeuticProcessOrmEntity]),
-    ProfesionalesModule,
+    AuthModule,
   ],
   controllers: [TherapeuticProcessController],
   providers: [TherapeuticProcessService],

@@ -1,8 +1,7 @@
-
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { ProfesionalesModule } from '../../profesionales/profesionales.module';
+import { AuthModule } from '../../auth/auth.module';
 
 // Se importa el controlador (Presentacion)
 import { PatientController } from './presentation/controllers/patient.controller';
@@ -19,8 +18,8 @@ import { PatientOrmEntity } from './infrastructure/persistence/patient.orm-entit
     // Se registra la entidad de TypeORM para que NestJS sepa que pertenece a este modulo
     TypeOrmModule.forFeature([PatientOrmEntity]),
 
-    // Permite utilizar ProfesionalesService desde el controlador de Pacientes
-    ProfesionalesModule,
+    // Reutiliza la identidad profesional habilitada y los guards compartidos
+    AuthModule,
   ],
 
   controllers: [

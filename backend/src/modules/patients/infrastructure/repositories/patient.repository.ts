@@ -1,4 +1,3 @@
-
 import {
   Injectable,
   NotFoundException,
@@ -66,45 +65,31 @@ export class PatientRepository implements IPatientRepository {
   }
 
   // Registrar paciente y crear su proceso terapéutico inicial
-  async create(
-    patient: Patient,
-    idProfesional: number,
-  ): Promise<Patient> {
+  async create(patient: Patient, idProfesional: number): Promise<Patient> {
     try {
-      return await this.ormRepository.manager.transaction(
-        async (manager) => {
-          // 1. Registrar al paciente
-          const pacienteOrm = manager.create(
-            PatientOrmEntity,
-            patient,
-          );
+      return await this.ormRepository.manager.transaction(async (manager) => {
+        // 1. Registrar al paciente
+        const pacienteOrm = manager.create(PatientOrmEntity, patient);
 
-          const pacienteGuardado = await manager.save(
-            PatientOrmEntity,
-            pacienteOrm,
-          );
+        const pacienteGuardado = await manager.save(
+          PatientOrmEntity,
+          pacienteOrm,
+        );
 
-          // 2. Crear el proceso terapéutico inicial
-          const procesoTerapeutico = manager.create(
-            TherapeuticProcessOrmEntity,
-            {
-              idProfesional,
-              paciente: pacienteGuardado,
-              idEstadoProcesoTerapeutico: 1, // Activo
-              fechaInicio: new Date(),
-            },
-          );
+        // 2. Crear el proceso terapéutico inicial
+        const procesoTerapeutico = manager.create(TherapeuticProcessOrmEntity, {
+          idProfesional,
+          paciente: pacienteGuardado,
+          idEstadoProcesoTerapeutico: 1, // Activo
+          fechaInicio: new Date(),
+        });
 
-          // 3. Guardar el proceso terapéutico
-          await manager.save(
-            TherapeuticProcessOrmEntity,
-            procesoTerapeutico,
-          );
+        // 3. Guardar el proceso terapéutico
+        await manager.save(TherapeuticProcessOrmEntity, procesoTerapeutico);
 
-          // 4. Devolver el paciente registrado
-          return this.toDomain(pacienteGuardado);
-        },
-      );
+        // 4. Devolver el paciente registrado
+        return this.toDomain(pacienteGuardado);
+      });
     } catch (error: unknown) {
       // PostgreSQL: 23505 = violación de restricción UNIQUE
       if (error instanceof QueryFailedError) {
@@ -115,8 +100,7 @@ export class PatientRepository implements IPatientRepository {
 
         if (
           driverError.code === '23505' &&
-          driverError.constraint ===
-            'UQ_patients_tipo_numero_documento'
+          driverError.constraint === 'UQ_patients_tipo_numero_documento'
         ) {
           throw new ConflictException(
             'Ya existe un paciente registrado con ese tipo y número de documento.',
@@ -142,9 +126,7 @@ export class PatientRepository implements IPatientRepository {
     );
 
     if (!pacienteExistente) {
-      throw new NotFoundException(
-        `El paciente con id ${idPaciente} no fue encontrado`,
-      );
+      throw new NotFoundException('Recurso no encontrado');
     }
 
     try {
@@ -160,8 +142,7 @@ export class PatientRepository implements IPatientRepository {
 
         if (
           driverError.code === '23505' &&
-          driverError.constraint ===
-            'UQ_patients_tipo_numero_documento'
+          driverError.constraint === 'UQ_patients_tipo_numero_documento'
         ) {
           throw new ConflictException(
             'Ya existe un paciente registrado con ese tipo y número de documento.',
@@ -178,9 +159,7 @@ export class PatientRepository implements IPatientRepository {
     });
 
     if (!updated) {
-      throw new NotFoundException(
-        `El paciente con id ${idPaciente} no fue encontrado`,
-      );
+      throw new NotFoundException('Recurso no encontrado');
     }
 
     return this.toDomain(updated);

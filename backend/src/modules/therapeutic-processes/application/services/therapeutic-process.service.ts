@@ -1,15 +1,10 @@
-
 import {
   Injectable,
   BadRequestException,
   NotFoundException,
-  ForbiddenException,
 } from '@nestjs/common';
 
-import {
-  InjectRepository,
-  InjectEntityManager,
-} from '@nestjs/typeorm';
+import { InjectRepository, InjectEntityManager } from '@nestjs/typeorm';
 
 import { Repository, EntityManager } from 'typeorm';
 
@@ -33,21 +28,15 @@ export class TherapeuticProcessService {
     dto: CreateTherapeuticProcessDto,
     idProfesional: number,
   ): Promise<TherapeuticProcessOrmEntity> {
-
     // 1. Verificar que el paciente exista
-    const paciente = await this.entityManager.findOne(
-      PatientOrmEntity,
-      {
-        where: {
-          idPaciente: dto.idPaciente,
-        },
+    const paciente = await this.entityManager.findOne(PatientOrmEntity, {
+      where: {
+        idPaciente: dto.idPaciente,
       },
-    );
+    });
 
     if (!paciente) {
-      throw new NotFoundException(
-        `No existe un paciente con ID ${dto.idPaciente}`,
-      );
+      throw new NotFoundException('Recurso no encontrado');
     }
 
     // 2. Verificar si pertenece a otro profesional
@@ -62,9 +51,7 @@ export class TherapeuticProcessService {
       .getOne();
 
     if (procesoDeOtroProfesional) {
-      throw new BadRequestException(
-        'El paciente está asociado a otro profesional.',
-      );
+      throw new NotFoundException('Recurso no encontrado');
     }
 
     // 3. Verificar que no tenga un proceso activo
@@ -104,23 +91,13 @@ export class TherapeuticProcessService {
     dto: ChangeTherapeuticProcessStateDto,
     idProfesional: number,
   ): Promise<TherapeuticProcessOrmEntity> {
-
     // 1. Verificar que el proceso exista
     const proceso = await this.processRepository.findOne({
-      where: { idProcesoTerapeutico },
+      where: { idProcesoTerapeutico, idProfesional },
     });
 
     if (!proceso) {
-      throw new NotFoundException(
-        `No existe un proceso terapéutico con ID ${idProcesoTerapeutico}`,
-      );
-    }
-
-    // 2. Verificar que pertenezca al profesional autenticado
-    if (proceso.idProfesional !== idProfesional) {
-      throw new ForbiddenException(
-        'No tienes permisos para modificar este proceso terapéutico.',
-      );
+      throw new NotFoundException('Recurso no encontrado');
     }
 
     // 3. Verificar que esté activo
@@ -135,8 +112,7 @@ export class TherapeuticProcessService {
       .createQueryBuilder()
       .update(TherapeuticProcessOrmEntity)
       .set({
-        idEstadoProcesoTerapeutico:
-          dto.idEstadoProcesoTerapeutico,
+        idEstadoProcesoTerapeutico: dto.idEstadoProcesoTerapeutico,
         fechaFinalizacion: new Date(),
         motivoFinalizacion: dto.motivoFinalizacion ?? '',
       })
@@ -160,13 +136,11 @@ export class TherapeuticProcessService {
 
     // 6. Recuperar el proceso actualizado
     const procesoActualizado = await this.processRepository.findOne({
-      where: { idProcesoTerapeutico },
+      where: { idProcesoTerapeutico, idProfesional },
     });
 
     if (!procesoActualizado) {
-      throw new NotFoundException(
-        `No existe un proceso terapéutico con ID ${idProcesoTerapeutico}`,
-      );
+      throw new NotFoundException('Recurso no encontrado');
     }
 
     return procesoActualizado;
