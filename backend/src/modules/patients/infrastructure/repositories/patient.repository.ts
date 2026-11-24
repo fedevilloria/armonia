@@ -1,17 +1,17 @@
 
 import {
+  ConflictException,
   Injectable,
   NotFoundException,
-  ConflictException,
 } from '@nestjs/common';
 
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, QueryFailedError } from 'typeorm';
+import { QueryFailedError, Repository } from 'typeorm';
 
-import { PatientOrmEntity } from '../persistence/patient.orm-entity';
+import { TherapeuticProcessOrmEntity } from '../../../therapeutic-processes/infrastructure/persistence/therapeutic-process.orm-entity';
 import { Patient } from '../../domain/entities/patient.entity';
 import { IPatientRepository } from '../../domain/repositories/patient.repository.interface';
-import { TherapeuticProcessOrmEntity } from '../../../therapeutic-processes/infrastructure/persistence/therapeutic-process.orm-entity';
+import { PatientOrmEntity } from '../persistence/patient.orm-entity';
 
 @Injectable()
 export class PatientRepository implements IPatientRepository {
@@ -22,7 +22,10 @@ export class PatientRepository implements IPatientRepository {
 
   // Mapeador de ORM a dominio
   private toDomain(ormEntity: PatientOrmEntity): Patient {
-    return new Patient(ormEntity);
+    return new Patient({
+      ...ormEntity,
+      fechaNacimiento: new Date(ormEntity.fechaNacimiento),
+    });
   }
 
   // Consultar pacientes asociados al profesional
@@ -75,8 +78,15 @@ export class PatientRepository implements IPatientRepository {
         async (manager) => {
           // 1. Registrar al paciente
           const pacienteOrm = manager.create(
-            PatientOrmEntity,
-            patient,
+            PatientOrmEntity,{
+              ...patient,
+              fechaNacimiento:
+              patient.fechaNacimiento instanceof Date
+                ? patient.fechaNacimiento.toISOString().split('T')[0]
+                : patient.fechaNacimiento,
+
+            },
+            
           );
 
           const pacienteGuardado = await manager.save(
@@ -149,7 +159,16 @@ export class PatientRepository implements IPatientRepository {
 
     try {
       // Actualizar los datos del paciente
-      await this.ormRepository.update(idPaciente, patient);
+      const {fechaNacimiento, ...restDatos} = patient;
+      await this.ormRepository.update(idPaciente, {
+        ...restDatos,
+        ...(fechaNacimiento && {
+          fechaNacimiento:
+            fechaNacimiento instanceof Date
+              ? fechaNacimiento.toISOString().split('T')[0]
+              : fechaNacimiento,
+        }),
+      });
     } catch (error: unknown) {
       // Detectar documentos duplicados durante una actualización
       if (error instanceof QueryFailedError) {

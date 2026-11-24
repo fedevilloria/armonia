@@ -11,7 +11,7 @@ export class TherapeuticProcessOrmEntity {
     @Column()
     idProfesional!: number;
 
-    @ManyToOne(() => PatientOrmEntity)
+    @ManyToOne(() => PatientOrmEntity, (paciente) => paciente.procesosTerapeuticos)
     @JoinColumn({ name: 'idPaciente' })
     paciente!: PatientOrmEntity;
 
