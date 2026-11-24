@@ -12,6 +12,7 @@ import { TherapeuticProcessOrmEntity } from '../../infrastructure/persistence/th
 import { CreateTherapeuticProcessDto } from '../dto/create-therapeutic-process.dto';
 import { ChangeTherapeuticProcessStateDto } from '../dto/change-therapeutic-process-state.dto';
 import { PatientOrmEntity } from '../../../patients/infrastructure/persistence/patient.orm-entity';
+import { translateClinicalPersistenceError } from '../../../../database/clinical-persistence-errors';
 
 @Injectable()
 export class TherapeuticProcessService {
@@ -82,7 +83,11 @@ export class TherapeuticProcessService {
     });
 
     // 5. Guardar y devolver
-    return await this.processRepository.save(nuevoProceso);
+    try {
+      return await this.processRepository.save(nuevoProceso);
+    } catch (error: unknown) {
+      throw translateClinicalPersistenceError(error, 'process-create');
+    }
   }
 
   // Cambiar el estado de un proceso terapéutico

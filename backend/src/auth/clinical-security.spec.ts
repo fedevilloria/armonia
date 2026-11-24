@@ -4,11 +4,12 @@ import {
   INestApplication,
   Module,
   ValidationPipe,
+  Logger,
 } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
-import { DataSource, EntityManager } from 'typeorm';
+import { DataSource, EntityManager, QueryFailedError } from 'typeorm';
 import request from 'supertest';
 import { PatientsModule } from '../modules/patients/patients.module';
 import { TherapeuticProcessesModule } from '../modules/therapeutic-processes/therapeutic-processes.module';
@@ -345,4 +346,173 @@ describe('Clinical HTTP security', () => {
       where: { idPaciente: 1 },
     });
   });
+
+  it('rejects empty updates before checking any patient', async () => {
+    for (const id of [1, 4, 999]) {
+      await send('put', `/patients/${id}`, {}, token()).expect(400);
+    }
+    expect(patients.findByIdAndProfessional).not.toHaveBeenCalled();
+    expect(patients.update).not.toHaveBeenCalled();
+  });
+  it.each([
+    'nombre',
+    'apellido',
+    'telefono',
+    'correoElectronico',
+    'idTipoDocumento',
+    'numeroDocumento',
+    'fechaNacimiento',
+    'direccion',
+  ])('rejects null in mandatory patient field %s', async (field) => {
+    await send('put', '/patients/1', { [field]: null }, token()).expect(400);
+    expect(patients.update).not.toHaveBeenCalled();
+  });
+  it('passes explicit null contacts through as a valid partial update', async () => {
+    const body = {
+      nombreContactoEmergencia: null,
+      telefonoContactoEmergencia: null,
+    };
+    patients.update.mockResolvedValue({ idPaciente: 1, ...body });
+    const response = await send('put', '/patients/1', body, token()).expect(
+      200,
+    );
+    expect(response.body).toMatchObject(body);
+    expect(patients.update).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining(body),
+      42,
+    );
+  });
+  it('keeps inaccessible patient errors generic even with an unknown document type', async () => {
+    patients.findByIdAndProfessional.mockResolvedValue(null);
+    const foreign = await send(
+      'put',
+      '/patients/4',
+      { idTipoDocumento: 999 },
+      token(),
+    ).expect(404);
+    const absent = await send(
+      'put',
+      '/patients/999',
+      { idTipoDocumento: 999 },
+      token(),
+    ).expect(404);
+    expect(foreign.body).toEqual(absent.body);
+    expect(patients.update).not.toHaveBeenCalled();
+  });
+  it.each([
+    ['23505', 'IDX_proceso_activo_por_paciente', 409],
+    ['23505', 'other_unique', 500],
+    ['23503', 'IDX_proceso_activo_por_paciente', 500],
+  ])(
+    'safely handles process insert failure %s %s',
+    async (code, constraint, status) => {
+      processes.save.mockRejectedValueOnce(
+        new QueryFailedError(
+          'SENTINEL_SQL',
+          ['SENTINEL_DOCUMENT'],
+          Object.assign(new Error('SENTINEL_EMAIL'), {
+            code,
+            constraint,
+            detail: 'SENTINEL_CLINICAL_NOTE',
+          }),
+        ),
+      );
+      const response = await send(
+        'post',
+        '/procesos-terapeuticos',
+        { idPaciente: 1 },
+        token(),
+      ).expect(status);
+      expect(JSON.stringify(response.body)).not.toContain('SENTINEL');
+      expect(response.body).toMatchObject({
+        message:
+          status === 409
+            ? 'No se pudo crear el proceso porque existe un proceso activo.'
+            : 'No se pudo completar la operación.',
+      });
+    },
+  );
+  it.each([
+    'patient-create',
+    'patient-list',
+    'patient-access',
+    'patient-update',
+    'process-patient-read',
+    'process-read',
+    'process-update',
+  ])(
+    'sanitizes unexpected %s errors without forwarding them to logs',
+    async (step) => {
+      const failure = new QueryFailedError(
+        'SENTINEL_SQL',
+        ['SENTINEL_DOCUMENT', 'SENTINEL_EMAIL'],
+        Object.assign(new Error('SENTINEL_CLINICAL_NOTE'), {
+          detail: 'SENTINEL_CLINICAL_NOTE',
+        }),
+      );
+      const logger = jest
+        .spyOn(Logger.prototype, 'error')
+        .mockImplementation(() => undefined);
+      const consoleError = jest
+        .spyOn(console, 'error')
+        .mockImplementation(() => undefined);
+      const consoleWarn = jest
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+      try {
+        let method = 'post',
+          path = '/patients',
+          body: object = patient;
+        if (step === 'patient-create')
+          patients.create.mockRejectedValueOnce(failure);
+        if (step === 'patient-list') {
+          method = 'get';
+          patients.findAllByProfessional.mockRejectedValueOnce(failure);
+        }
+        if (step === 'patient-access' || step === 'patient-update') {
+          method = 'put';
+          path = '/patients/1';
+          body = { telefono: '1100000001' };
+          if (step === 'patient-access')
+            patients.findByIdAndProfessional.mockRejectedValueOnce(failure);
+          else patients.update.mockRejectedValueOnce(failure);
+        }
+        if (step === 'process-patient-read') {
+          path = '/procesos-terapeuticos';
+          body = { idPaciente: 1 };
+          manager.findOne.mockRejectedValueOnce(failure);
+        }
+        if (step === 'process-read' || step === 'process-update') {
+          method = 'patch';
+          path = '/procesos-terapeuticos/1/estado';
+          body = { idEstadoProcesoTerapeutico: 3 };
+          if (step === 'process-read')
+            processes.findOne.mockRejectedValueOnce(failure);
+          else processBuilder.execute.mockRejectedValueOnce(failure);
+        }
+        const response = await send(method, path, body, token()).expect(500);
+        expect(response.body).toEqual({
+          statusCode: 500,
+          message: 'No se pudo completar la operación.',
+          error: 'Internal Server Error',
+        });
+        expect(
+          JSON.stringify([
+            response.body,
+            logger.mock.calls,
+            consoleError.mock.calls,
+            consoleWarn.mock.calls,
+          ]),
+        ).not.toContain('SENTINEL');
+        expect(logger).not.toHaveBeenCalled();
+        expect(consoleError).not.toHaveBeenCalled();
+        expect(consoleWarn).not.toHaveBeenCalled();
+      } finally {
+        logger.mockRestore();
+        consoleError.mockRestore();
+        consoleWarn.mockRestore();
+      }
+    },
+  );
 });

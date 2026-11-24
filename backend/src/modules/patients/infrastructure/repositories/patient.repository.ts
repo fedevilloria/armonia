@@ -1,11 +1,13 @@
 import {
   Injectable,
   NotFoundException,
-  ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, QueryFailedError } from 'typeorm';
+import { Repository } from 'typeorm';
+import { TipoDocumento } from '../../../../profesionales/entities/tipo-documento.entity';
+import { translateClinicalPersistenceError } from '../../../../database/clinical-persistence-errors';
 
 import { PatientOrmEntity } from '../persistence/patient.orm-entity';
 import { Patient } from '../../domain/entities/patient.entity';
@@ -68,6 +70,13 @@ export class PatientRepository implements IPatientRepository {
   async create(patient: Patient, idProfesional: number): Promise<Patient> {
     try {
       return await this.ormRepository.manager.transaction(async (manager) => {
+        const exists = await manager.existsBy(TipoDocumento, {
+          idTipoDocumento: patient.idTipoDocumento,
+        });
+        if (!exists)
+          throw new BadRequestException(
+            'El tipo de documento indicado no es válido.',
+          );
         // 1. Registrar al paciente
         const pacienteOrm = manager.create(PatientOrmEntity, patient);
 
@@ -91,25 +100,7 @@ export class PatientRepository implements IPatientRepository {
         return this.toDomain(pacienteGuardado);
       });
     } catch (error: unknown) {
-      // PostgreSQL: 23505 = violación de restricción UNIQUE
-      if (error instanceof QueryFailedError) {
-        const driverError = error.driverError as {
-          code?: string;
-          constraint?: string;
-        };
-
-        if (
-          driverError.code === '23505' &&
-          driverError.constraint === 'UQ_patients_tipo_numero_documento'
-        ) {
-          throw new ConflictException(
-            'Ya existe un paciente registrado con ese tipo y número de documento.',
-          );
-        }
-      }
-
-      // Otros errores se propagan sin modificarlos
-      throw error;
+      throw translateClinicalPersistenceError(error, 'patient-write');
     }
   }
 
@@ -130,27 +121,20 @@ export class PatientRepository implements IPatientRepository {
     }
 
     try {
+      if (patient.idTipoDocumento !== undefined) {
+        const exists = await this.ormRepository.manager.existsBy(
+          TipoDocumento,
+          { idTipoDocumento: patient.idTipoDocumento },
+        );
+        if (!exists)
+          throw new BadRequestException(
+            'El tipo de documento indicado no es válido.',
+          );
+      }
       // Actualizar los datos del paciente
       await this.ormRepository.update(idPaciente, patient);
     } catch (error: unknown) {
-      // Detectar documentos duplicados durante una actualización
-      if (error instanceof QueryFailedError) {
-        const driverError = error.driverError as {
-          code?: string;
-          constraint?: string;
-        };
-
-        if (
-          driverError.code === '23505' &&
-          driverError.constraint === 'UQ_patients_tipo_numero_documento'
-        ) {
-          throw new ConflictException(
-            'Ya existe un paciente registrado con ese tipo y número de documento.',
-          );
-        }
-      }
-
-      throw error;
+      throw translateClinicalPersistenceError(error, 'patient-write');
     }
 
     // Recuperar el paciente actualizado

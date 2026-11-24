@@ -8,6 +8,7 @@ import {
   ParseIntPipe,
   Req,
   UseGuards,
+  UseFilters,
 } from '@nestjs/common';
 
 import { PatientService } from '../../application/services/patient.service';
@@ -17,10 +18,13 @@ import { UpdatePatientDto } from '../../application/dto/update-patient.dto';
 import { ProfessionalIdentityGuard } from '../../../../auth/guards/professional-identity.guard';
 import { Roles } from '../../../../auth/decorators/roles.decorator';
 import type { AuthenticatedRequest } from '../../../../auth/authenticated-request';
+import { ClinicalExceptionFilter } from '../../../../common/filters/clinical-exception.filter';
+import { PatientUpdatePipe } from '../pipes/patient-update.pipe';
 
 @Controller('patients')
 @Roles('PROFESIONAL')
 @UseGuards(ProfessionalIdentityGuard)
+@UseFilters(ClinicalExceptionFilter)
 export class PatientController {
   constructor(private readonly patientService: PatientService) {}
 
@@ -46,7 +50,7 @@ export class PatientController {
   @Put(':id')
   async update(
     @Param('id', ParseIntPipe) idPaciente: number,
-    @Body() updatePatientDto: UpdatePatientDto,
+    @Body(PatientUpdatePipe) updatePatientDto: UpdatePatientDto,
     @Req() request: AuthenticatedRequest,
   ) {
     return this.patientService.updatePatient(

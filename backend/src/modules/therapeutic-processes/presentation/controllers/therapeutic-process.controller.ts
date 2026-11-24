@@ -7,6 +7,7 @@ import {
   ParseIntPipe,
   Req,
   UseGuards,
+  UseFilters,
 } from '@nestjs/common';
 
 import { TherapeuticProcessService } from '../../application/services/therapeutic-process.service';
@@ -16,10 +17,12 @@ import { ChangeTherapeuticProcessStateDto } from '../../application/dto/change-t
 import { ProfessionalIdentityGuard } from '../../../../auth/guards/professional-identity.guard';
 import { Roles } from '../../../../auth/decorators/roles.decorator';
 import type { AuthenticatedRequest } from '../../../../auth/authenticated-request';
+import { ClinicalExceptionFilter } from '../../../../common/filters/clinical-exception.filter';
 
 @Controller('procesos-terapeuticos')
 @Roles('PROFESIONAL')
 @UseGuards(ProfessionalIdentityGuard)
+@UseFilters(ClinicalExceptionFilter)
 export class TherapeuticProcessController {
   constructor(private readonly processService: TherapeuticProcessService) {}
 
